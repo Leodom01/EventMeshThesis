@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudevents-sender
+  labels:
+    app: cloudevents-sender-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudevents-sender-app
+  template:
+    metadata:
+      labels:
+        app: cloudevents-sender-app
+    spec:
+      containers:
+      - name: cloudevents-sender
+        image: batman.imolab.it:5000/cloudevents_sender:latest
+        ports:
+        - containerPort: 8080
+

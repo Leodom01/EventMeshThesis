@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rmq-dashboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rmq-dashboard
+  template:
+    metadata:
+      labels:
+        app: rmq-dashboard
+    spec:
+      containers:
+      - name: rmqdashboard
+        image: apacherocketmq/rocketmq-dashboard:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: JAVA_OPTS
+          value: "-Drocketmq.namesrv.addr=rmq-namesrv:9876"
+      

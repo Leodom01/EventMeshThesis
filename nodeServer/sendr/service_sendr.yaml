@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudevents-sender
+spec:
+  ports:
+  - name: "toport8080"
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: cloudevents-sender-app
+  type: ClusterIP

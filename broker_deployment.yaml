@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rmq-broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rmq-broker
+  template:
+    metadata:
+      labels:
+        app: rmq-broker
+    spec:
+      containers:
+      - name: rmqbroker
+        image: apache/rocketmq:4.9.4
+        command: ["sh", "mqbroker", "-c", "../conf/broker.conf"]
+        ports:
+        - containerPort: 10911
+        - containerPort: 10909
+        volumeMounts:
+        - name: broker-logs
+          mountPath: /root/logs
+        - name: broker-store
+          mountPath: /root/store
+        env:
+        - name: NAMESRV_ADDR
+          value: "rmq-namesrv:9876"
+      volumes:
+      - name: broker-logs
+        hostPath:
+          path: /home/leodom/data/broker/logs
+      - name: broker-store
+        hostPath:
+          path: /home/leodom/data/broker/store
