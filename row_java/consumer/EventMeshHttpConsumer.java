@@ -1,11 +1,9 @@
 package com.dominici.thesis.emesh.mavenproject;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.apache.eventmesh.client.http.conf.EventMeshHttpClientConfig;
-import org.apache.eventmesh.client.http.consumer.EventMeshHttpConsumer;
 import org.apache.eventmesh.common.protocol.SubscriptionItem;
 import org.apache.eventmesh.common.protocol.SubscriptionMode;
 import org.apache.eventmesh.common.protocol.SubscriptionType;
@@ -20,7 +18,7 @@ import org.apache.eventmesh.common.utils.ThreadUtils;
  *
  */
 
-public class HTTPConsumer {
+public class EventMeshHttpConsumer {
 	
 	//Loopback url to the SubController.java file that implements a Spring Boot controller, which receive and perses the message
 	final static String url = "http://localhost:8080/callback";	//vuole questi due valori static (COME MAI?)
@@ -46,20 +44,17 @@ public class HTTPConsumer {
 				      .password("nacos")									//Unsure
 				      .build();
 			//Devo mettere il path altrimenti se importo import org.apache.eventmesh.client.http.consumer.EventMeshHttpConsumer; dice che EventMeshHttpConsumer è definito da due parti...
-			EventMeshHttpConsumer eventMeshHttpConsumer = new EventMeshHttpConsumer(eventMeshClientConfig);
+			org.apache.eventmesh.client.http.consumer.EventMeshHttpConsumer eventMeshHttpConsumer = new org.apache.eventmesh.client.http.consumer.EventMeshHttpConsumer(eventMeshClientConfig);
 		    eventMeshHttpConsumer.heartBeat(topicList, url);
 		    eventMeshHttpConsumer.subscribe(topicList, url);
+		    /* ... */
 		    
-		    System.out.println("HTTPConsumer: tutti i messaggi dovrebbero ora andare a "+url);
+		    
 		    //Ottengo lista di stringhe con i nomi degli item da cui unsubscribe
 		    for(SubscriptionItem temp : topicList) {
 		    	topicNames.add(temp.getTopic());
 		    }
-		    
-		    System.out.println("HTTPConsumer: Mi appresto ad unsubcribe...");
 		    eventMeshHttpConsumer.unsubscribe(topicNames, url);		//Per quale cavolo di motivo non accetta la lista di SubscriptionItem come subscribe
-		    
-		    eventMeshHttpConsumer.close();
 		}catch(Exception e) {
 			System.out.println("HTTPConsumer has encountered an exception: ");
 			e.printStackTrace();
