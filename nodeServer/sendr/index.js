@@ -12,7 +12,7 @@ const TARGET_IP = "cloudevents-receiver.default.svc.cluster.local";
 const TARGET_PORT = "8080";
 
 // Create an emitter to send events to a receiver
-//const emit = emitterFor(httpTransport("http://" + TARGET_IP + ":" + TARGET_PORT + "/callback"));
+const emit = emitterFor(httpTransport("http://cloudevents-receiver.default.svc.cluster.local:8080/callback"));
 
 // App
 const app = express();
@@ -25,58 +25,29 @@ app.get('/', (req, res) => {
 //It is not very clear if the CloudEvetn si simply serialzied by the HTTPConsumer
 app.get("/send", (req, res) => {
 
-  /*
-  const header = {
-    'Content-Type': 'application/json',
-    'CE-SpecVersion': '1.0',
-    'CE-Type': "com.demo.weather-report",
-    'CE-Source': "/send",
-    'CE-ID': "TEST-#" + Math.floor(Math.random() * 1000).toString(),
-    'CE-Time': new Date().toISOString()
-  }
-  */
-
   // Create a new CloudEvent
-  //const ce = new CloudEvent(msgToSend);
   const ce = new CloudEvent({
     specversion: '1.0',
-    id: 'my-event-id',
-    type: 'com.example.myevent',
+    id: 'TEST-#'+Math.floor(Math.random() * 10000).toString(),
+    type: 'com.demo.weather-report',
     source: 'https://cloudevents-sender.default.svc.cluster.local/send',
     data: {
-      message: 'Hello, CloudEvent!'
+      lat: '44.42166302363834', 
+      lon: '11.914882614159643',
+      temp: Math.floor(Math.random()*50).toString(),
+      hum: Math.floor(Math.random()*100).toString(),
+      rain: Math.floor(Math.random()*10).toString(),
+      rec_time: new Date().toDateString()
     }
   });
 
-  const emit = emitterFor(httpTransport("http://cloudevents-receiver.default.svc.cluster.local:8080/callback"));
+  //Still have to understand whether this one is a syncronous or not, worst case scanario (it is syncronous) I'll use axios
+  emit(ce);
 
-  emit(ce)
-    .then(response => {
-      console.log("Emit response: "+response.data);
-    })
-    .catch(err => {
-      // Deal with errors
-      console.log("Error during event post");
-      console.error(err);
-    });
-
-  //const httpMessage = HTTP.structured(ce);
-/**
-  // Send it to the endpoint - encoded as HTTP binary by default
-  //emit(ce);
-  axios.post('http://' + TARGET_IP + ':' + TARGET_PORT + '/callback', ce, {
-    headers: {
-      'Content-Type': 'application/cloudevents+json'
-    }
-  }).then(response => {
-    res.status(200).send(response.data);
-    return;
-  }).catch(err => {
-    res.status(500).send(err.response.data);
-    return;
-  });
-  */
   console.log("Sent as body: "+JSON.stringify(ce, null, 2));
+
+  res.status(200).send("POST endpoint call terminated\n");
+
 });
 
 app.listen(PORT, HOST, () => {

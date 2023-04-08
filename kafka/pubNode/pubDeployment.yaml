@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejs-kafka-publisher
+  labels:
+    app: nodejs-kafka-publisher-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodejs-kafka-publisher-app
+  template:
+    metadata:
+      labels:
+        app: nodejs-kafka-publisher-app
+    spec:
+      containers:
+      - name: nodejs-kafka-publisher
+        image: batman.imolab.it:5000/nodejs-kafka-publisher:latest
+

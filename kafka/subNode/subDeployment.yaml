@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejs-kafka-subscriber
+  labels:
+    app: nodejs-kafka-subscriber-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodejs-kafka-subscriber-app
+  template:
+    metadata:
+      labels:
+        app: nodejs-kafka-subscriber-app
+    spec:
+      containers:
+      - name: nodejs-kafka-subscriber
+        image: batman.imolab.it:5000/nodejs-kafka-subscriber:latest
+
