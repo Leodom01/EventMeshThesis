@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nodejs-kafka-publisher
+  name: kafka-pub-proxy
   labels:
-    app: nodejs-kafka-publisher-app
+    app: kafka-pub-proxy-app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nodejs-kafka-publisher-app
+      app: kafka-pub-proxy-app
   template:
     metadata:
       labels:
-        app: nodejs-kafka-publisher-app
+        app: kafka-pub-proxy-app
     spec:
       containers:
-      - name: nodejs-kafka-publisher
-        image: batman.imolab.it:5000/nodejs-kafka-publisher:latest
+      - name: kafka-pub-proxy
+        image: batman.imolab.it:5000/kafka-pub-proxy:latest
 

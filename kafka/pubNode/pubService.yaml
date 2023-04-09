@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: nodejs-kafka-publisher
+  name: kafka-pub-proxy
 spec:
   ports:
   - name: "toport8080"
     port: 8080
     targetPort: 8080
   selector:
-    app: nodejs-kafka-publisher-app
+    app: kafka-pub-proxy-app
   type: ClusterIP

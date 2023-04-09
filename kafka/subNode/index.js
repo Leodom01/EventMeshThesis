@@ -36,6 +36,6 @@ app.get('/receiveMsg', function (req, res) {
 });
 
 // start the server
-app.listen(2999, function () {
-  console.log('Server started on port 2999');
+app.listen(3000, function () {
+  console.log('Proxy-subscriber side started. Speaking on port 3000');
 });

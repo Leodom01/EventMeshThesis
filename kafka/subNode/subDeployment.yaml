@@ -1,20 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nodejs-kafka-subscriber
+  name: kafka-sub-proxy
   labels:
-    app: nodejs-kafka-subscriber-app
+    app: kafka-sub-proxy-app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nodejs-kafka-subscriber-app
+      app: kafka-sub-proxy-app
   template:
     metadata:
       labels:
-        app: nodejs-kafka-subscriber-app
+        app: kafka-sub-proxy-app
     spec:
       containers:
-      - name: nodejs-kafka-subscriber
-        image: batman.imolab.it:5000/nodejs-kafka-subscriber:latest
-
+      - name: kafka-sub-proxy
+        image: batman.imolab.it:5000/kafka-sub-proxy:latest
