@@ -4,7 +4,7 @@ sudo docker build . -t kafka-pub-proxy;
 
 IMAGE_TO_RMV=$(sudo docker images localhost:5000/kafka-pub-proxy -q)
 
-sudo docker tag nodejs-rmq-consumer localhost:5000/kafka-pub-proxy;
+sudo docker tag kafka-pub-proxy localhost:5000/kafka-pub-proxy;
 
 sudo docker push localhost:5000/kafka-pub-proxy;
 
