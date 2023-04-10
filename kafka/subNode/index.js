@@ -20,8 +20,12 @@ const run = async () => {
   await consumer.subscribe({ topic: 'quickstart-event', fromBeginning: true });
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
+      const ce = new CloudEvent(JSON.parse(message.value.toString()))
       console.log({
-        value: JSON.stringify(new CloudEvent(JSON.parse(message.value.toString())))
+        message: JSON.stringify(new CloudEvent(JSON.parse(message.value.toString())))
+      })
+      console.log({
+        body: ce.data
       })
       const ceMessage = new CloudEvent(JSON.parse(message.value.toString()))
     },
@@ -29,11 +33,6 @@ const run = async () => {
 }
 
 run().catch(console.error);
-
-// define the /receiveMsg route
-app.get('/receiveMsg', function (req, res) {
-  res.send('Still working on this');
-});
 
 // start the server
 app.listen(3000, function () {
