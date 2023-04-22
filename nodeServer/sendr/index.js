@@ -4,6 +4,7 @@ const express = require('express');
 const { httpTransport, emitterFor, CloudEvent } = require("cloudevents");
 const axios = require('axios');
 const { response } = require('express');
+import WebSocket, { WebSocketServer } from 'ws';
 
 // Constants
 const PORT = 8080;

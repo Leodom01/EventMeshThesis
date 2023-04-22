@@ -34,3 +34,5 @@ spec:
           value: "1"
         - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
           value: "1"
+        - name: KAFKAJS_NO_PARTITIONER_WARNING
+          value: "1"

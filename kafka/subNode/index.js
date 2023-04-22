@@ -2,19 +2,19 @@ const { Kafka } = require('kafkajs');
 const express = require('express');
 const { CloudEvent } = require('cloudevents');
 
+// app setup
 const app = express();
 
+//Kafka connector setup
 const kafkaHostname = "kafka-service.default.svc.cluster.local"
 const kafkaPort = "9092"
-
-// create a Kafka client and consumer
 const kafka = new Kafka({
   clientId: 'nodejs-consumer',
   brokers: [`${kafkaHostname}:${kafkaPort}`],
 })
-const consumer = kafka.consumer({ groupId: 'test-group' });
+const consumer = kafka.consumer({ groupId: 'myMeshProxy' });
 
-// handle incoming messages
+//main method
 const run = async () => {
   await consumer.connect();
   await consumer.subscribe({ topic: 'quickstart-event', fromBeginning: true });

@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-proxy
+  labels:
+    app: kafka-proxy-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-proxy-app
+  template:
+    metadata:
+      labels:
+        app: kafka-proxy-app
+    spec:
+      containers:
+      - name: kafka-proxy
+        image: batman.imolab.it:5000/kafka-proxy:latest
+
