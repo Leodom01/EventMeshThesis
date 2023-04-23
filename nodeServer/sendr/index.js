@@ -9,6 +9,8 @@ import http from 'http';
 
 // Constants
 const localPort = 8080
+//I need to find a way to get it from the kubernetes service
+const myHostname = 'cloudevents-sender'
 
 // App
 const app = express();
@@ -35,15 +37,22 @@ app.get("/send", (req, res) => {
     method: 'GET',
     url: 'http://myTargetService/myDestPath',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Origin': myHostname
     },
     rawHeaders: ['Content-Type', 'application/json']
   });
   httpRequest.data = "Test del body :)"
 
-  ws.send(JSON.stringify(httpRequest))
+  const toSend = {
+    header: httpRequest.socket,
+    body: httpRequest.data
+  }
 
-  console.log("Sent message: "+JSON.stringify(httpRequest))
+  ws.send(JSON.stringify(toSend))
+
+  //console.log("Sent message: "+JSON.stringify(toSend))
+  //Handle response from ws before returning status 200 and check error cases
   res.status(200).send('Hopefully I sent it! \n');
 });
 

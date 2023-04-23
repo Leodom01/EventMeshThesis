@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { request } from 'express';
 import { Kafka, Partitioners } from 'kafkajs';
 import { CloudEvent } from 'cloudevents';
 import BodyParser from 'body-parser';
@@ -20,6 +20,29 @@ wss.on('connection', function connection(ws){
   
   ws.on('message', function message(data){
     console.log('Received: %s', data)
+    const requestToForward = JSON.parse(data)
+    
+    //Create CloudEvent
+    const ce = new CloudEvent({
+      specversion: '1.0',
+      source: requestToForward.header.headers.Origin,
+      type: requestToForward.header.url,
+      data: requestToForward.body
+    })
+
+    // send the message to Kafka
+    const topic = requestToForward.header.headers.Origin    //Qui dovrà essere requestToForward.header.headers.Origin
+    const message = JSON.stringify(ce)
+    producer.send({ topic: topic, messages: [{ value: message }] })
+      .then((result) => {
+        console.log('Message sent!');
+        ws.send("Message forwarded to Kafka!")
+      })
+      .catch((err) => {
+        console.error('Error sending message:' + err);
+        ws.send("Error while forwarding message to Kafka:"+err)
+      });
+    console.log("Waiting for Kafka response...")
   })
 });
 
@@ -134,5 +157,7 @@ async function run() {
     console.log('Proxy started. Speaking on port 3000')
   });
 }
+
+
 
 run().catch(console.error);
