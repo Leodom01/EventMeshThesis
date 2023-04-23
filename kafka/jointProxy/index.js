@@ -16,9 +16,9 @@ const wss = new WebSocketServer({ port: wssPort })
 wss.on('connection', function connection(ws){
   console.log("New connection received...");
 
-  wss.on('error', console.error);
+  ws.on('error', console.error);
   
-  wss.on('message', function message(data){
+  ws.on('message', function message(data){
     console.log('Received: %s', data)
   })
 });

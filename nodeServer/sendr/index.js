@@ -1,58 +1,55 @@
 'use strict';
 
-const express = require('express');
-const { httpTransport, emitterFor, CloudEvent } = require("cloudevents");
-const axios = require('axios');
-const { response } = require('express');
+import express from 'express';
+import { httpTransport, emitterFor, CloudEvent } from "cloudevents";
+import { response } from 'express';
 import WebSocket, { WebSocketServer } from 'ws';
+import axios from 'axios';
+import http from 'http';
 
 // Constants
-const PORT = 8080;
-const HOST = '0.0.0.0';
-const TARGET_IP = "cloudevents-receiver.default.svc.cluster.local";
-const TARGET_PORT = "8080";
-
-// Create an emitter to send events to a receiver
-const emit = emitterFor(httpTransport("http://cloudevents-receiver.default.svc.cluster.local:8080/callback"));
+const localPort = 8080
 
 // App
 const app = express();
 
-app.get('/', (req, res) => {
-  res.send('I am the sender\n');
-});
+//Setup websocket
+const ws = new WebSocket('ws://kafka-proxy.default.svc.cluster.local:80');
 
-//I'm now parsing in a pretty brutal way, as soon as the system will be running I'll tune it
-//It is not very clear if the CloudEvetn si simply serialzied by the HTTPConsumer
+ws.on('error', console.error);
+ws.on('open', function open(){
+  console.log("Connesso a websocekt...")
+})
+ws.on('message', function message(data){
+  console.log('Received: %s', data)
+})
+/**
+ * GET /send generate a body and send it trhough the websocket connection and returns the proxy response
+ */
 app.get("/send", (req, res) => {
+  console.log("Invocato /send...")
 
-  // Create a new CloudEvent
-  const ce = new CloudEvent({
-    specversion: '1.0',
-    id: 'TEST-#'+Math.floor(Math.random() * 10000).toString(),
-    type: 'com.demo.weather-report',
-    source: 'https://cloudevents-sender.default.svc.cluster.local/send',
-    data: {
-      lat: '44.42166302363834', 
-      lon: '11.914882614159643',
-      temp: Math.floor(Math.random()*50).toString(),
-      hum: Math.floor(Math.random()*100).toString(),
-      rain: Math.floor(Math.random()*10).toString(),
-      rec_time: new Date().toDateString()
-    }
+  //Voglio creare http request senza mandarla perchè è come se mi mettessi in mezzo e intercettassi tutto 
+  //il traffico per poi girarlo al proxy che poi se ne occupa. In modo che il dev del servizio non debba implementare nulla  
+  const httpRequest = new http.IncomingMessage({
+    method: 'GET',
+    url: 'http://myTargetService/myDestPath',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    rawHeaders: ['Content-Type', 'application/json']
   });
+  httpRequest.data = "Test del body :)"
 
-  //Still have to understand whether this one is a syncronous or not, worst case scanario (it is syncronous) I'll use axios
-  emit(ce);
+  ws.send(JSON.stringify(httpRequest))
 
-  console.log("Sent as body: "+JSON.stringify(ce, null, 2));
-
-  res.status(200).send("POST endpoint call terminated\n");
-
+  console.log("Sent message: "+JSON.stringify(httpRequest))
+  res.status(200).send('Hopefully I sent it! \n');
 });
 
-app.listen(PORT, HOST, () => {
-  console.log(`Running on http://${HOST}:${PORT} \n`);
+  // Start the server on port 8080
+app.listen(localPort, () => {
+  console.log(`Running on port ${localPort} \n`);
 });
 
 
