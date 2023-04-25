@@ -4,6 +4,9 @@ import { CloudEvent } from 'cloudevents';
 import BodyParser from 'body-parser';
 import { WebSocketServer } from 'ws';
 
+//Map connecting hostname/service name's topic name for kafka with websocket open 
+const openConnections = new Map();
+
 // app setup
 const app = express();
 app.use(BodyParser.urlencoded({ extended: false}))
@@ -19,30 +22,40 @@ wss.on('connection', function connection(ws){
   ws.on('error', console.error);
   
   ws.on('message', function message(data){
-    console.log('Received: %s', data)
-    const requestToForward = JSON.parse(data)
-    
-    //Create CloudEvent
-    const ce = new CloudEvent({
-      specversion: '1.0',
-      source: requestToForward.header.headers.Origin,
-      type: requestToForward.header.url,
-      data: requestToForward.body
-    })
-
-    // send the message to Kafka
-    const topic = requestToForward.header.headers.Origin    //Qui dovrà essere requestToForward.header.headers.Origin
-    const message = JSON.stringify(ce)
-    producer.send({ topic: topic, messages: [{ value: message }] })
-      .then((result) => {
-        console.log('Message sent!');
-        ws.send("Message forwarded to Kafka!")
+    console.log('Received: %s\n Type of '+typeof data, data)
+    const stringOfData = JSON.stringify(data)
+    if(stringOfData.startsWith("registerMe:")){
+      //Then the service is asking to be added to the lsitening services
+      stringOfData = stringOfData.substring(11);
+      consumer.subscribe({ topic: stringOfData});
+      console.log("Adding "+stringOfData+" to the service list");
+      openConnections.set(stringOfData, ws);
+    }else{
+      //Else it means we have received a message
+      const requestToForward = JSON.parse(data)
+      const requestID = requestToForward.header.headers['X-Request-ID']
+      //Create CloudEvent
+      const ce = new CloudEvent({
+        specversion: '1.0',
+        source: requestToForward.header.headers.Origin,
+        type: requestToForward.header.url,
+        data: requestToForward.body
       })
-      .catch((err) => {
-        console.error('Error sending message:' + err);
-        ws.send("Error while forwarding message to Kafka:"+err)
-      });
-    console.log("Waiting for Kafka response...")
+
+      // send the message to Kafka
+      const topic = requestToForward.header.headers.Origin   
+      const message = JSON.stringify(ce)
+      producer.send({ topic: topic, messages: [{ value: message }] })
+        .then((result) => {
+          console.log('Message sent!');
+          ws.send("ACK "+requestID+" ok")
+        })
+        .catch((err) => {
+          console.error('Error sending message:' + err);
+          ws.send("ACK "+requestID+" ko "+err)
+        });
+      console.log("Waiting for Kafka response...")
+    }
   })
 });
 
@@ -67,7 +80,7 @@ async function run() {
   //Consumer setup
   await consumer.connect();
   console.log('Consumer side connected\n');
-  await consumer.subscribe({ topic: 'quickstart-event', fromBeginning: true });
+  await consumer.subscribe({ topic: 'quickstart-event'});
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
       console.log("Receiver: message received!")
