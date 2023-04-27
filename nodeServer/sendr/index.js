@@ -11,7 +11,17 @@ import { v4 as uuidv4 } from 'uuid';
 // Constants
 const localPort = 8080
 //I need to find a way to get it from the kubernetes service
-const myHostname = 'cloudevents-sender'
+let support;
+if(typeof process.env.SERVICE_NAME === 'undefined'){
+  console.log("WARNING: Set SERVICE_NAME env var to define the service name!")
+  support = "unnamed_service-"+Math.floor(Math.random() * 1000000)
+  console.log("Service name randomly generated: "+support)
+}else{
+  support = process.env.SERVICE_NAME
+  console.log("Service name set: "+support)
+}
+const serviceName = support
+
 
 //Map for request on air, contains UUID of the request and its departure time
 const flyingRequest = new Map();
@@ -25,6 +35,8 @@ const ws = new WebSocket('ws://kafka-proxy.default.svc.cluster.local:80');
 ws.on('error', console.error);
 ws.on('open', function open(){
   console.log("Connesso a websocekt...")
+  //After websocket is connected I send a RecordMe: request
+  ws.send("RecordMe:"+serviceName)
 })
 ws.on('message', function message(data){
   console.log('Received: %s', data)
@@ -37,13 +49,13 @@ ws.on('message', function message(data){
     const tokens = data.split(" ")
     if(tokens.length == 3 && tokens[2] == "ok"){
       //Messaggio consegnato
-      const res = flyingRequest.get(tokens[1])
+      var res = flyingRequest.get(tokens[1])
       console.log("Conferma consegna: "+tokens[2])
       res.status(200).send(tokens[1]+" OK")
       flyingRequest.delete(tokens[1])
     }else if(tokens.length >= 4 && tokens[2] == "ko"){
       //Messaggio non consegnato
-      const res = flyingRequest.get(tokens[1])
+      var res = flyingRequest.get(tokens[1])
       console.log("Errore consegna: "+tokens[2])
       res.status(500).send(tokens[1]+" KO:"+tokens.slice(3).join(' '))
       flyingRequest.delete(tokens[1])
@@ -52,6 +64,7 @@ ws.on('message', function message(data){
     }
   }
 })
+
 /**
  * GET /send generate a body and send it trhough the websocket connection and returns the proxy response
  */
@@ -62,19 +75,19 @@ app.get("/send", (req, res) => {
 
   //Voglio creare http request senza mandarla perchè è come se mi mettessi in mezzo e intercettassi tutto 
   //il traffico per poi girarlo al proxy che poi se ne occupa. In modo che il dev del servizio non debba implementare nulla  
-  const httpRequest = new http.IncomingMessage({
+  var httpRequest = new http.IncomingMessage({
     method: 'GET',
     url: 'http://myTargetService/myDestPath',
     headers: {
       'Content-Type': 'application/json',
-      'Origin': myHostname,
+      'Origin': serviceName,
       'X-Request-ID': requestID
     },
     rawHeaders: ['Content-Type', 'application/json']
   });
   httpRequest.data = "Test del body :)"
 
-  const toSend = {
+  var toSend = {
     header: httpRequest.socket,
     body: httpRequest.data
   }

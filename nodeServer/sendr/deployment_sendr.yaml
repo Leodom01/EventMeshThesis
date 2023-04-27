@@ -17,6 +17,10 @@ spec:
       containers:
       - name: cloudevents-sender
         image: batman.imolab.it:5000/cloudevents_sender:latest
+        env:
+        - name: SERVICE_NAME
+          value: "my_new_service_name"
         ports:
         - containerPort: 8080
+        
 
