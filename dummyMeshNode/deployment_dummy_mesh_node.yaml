@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dummy-node-bundle
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dummy-node-app
+  template:
+    metadata:
+      labels:
+        app: dummy-node-app
+    spec:
+      containers:
+      - name: node-service
+        image: batman.imolab.it:5000/node-service
+        env:
+        - name: SERVICE_NAME
+          value: "service-beta"    #When running kubectl apply add: --env SERVICE_NAME=<your actual service name>
+        - name: PROXY_WEBSOCKET_PORT
+          value: "80"
+        - name: PROXY_ENDPOINT
+          value: "localhost" 
+        ports:
+        - containerPort: 8080
+        #command: ["/bin/sh", "-c", "sleep 10"]  # Not sure I need it
+        #dependsOn:
+        #- name: kafka-proxy
+        #  condition: "Ready"
+      - name: kafka-proxy
+        image: batman.imolab.it:5000/kafka-proxy
+        env:
+        - name: KAFKA_ENDPOINT
+          value: "kafka-service.default.svc.cluster.local"
+        - name: KAFKA_PORT
+          value: "9092"
+        ports:
+        - containerPort: 80
+        #readinessProbe:
+        #  tcpSocket:
+        #    port: 80
+        #  initialDelaySeconds: 5
+        #  periodSeconds: 2
+      dnsPolicy: ClusterFirst

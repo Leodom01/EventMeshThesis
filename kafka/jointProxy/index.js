@@ -1,5 +1,5 @@
 import express, { request } from 'express';
-import { Kafka, Partitioners } from 'kafkajs';
+import { Kafka, Partitioners, logLevel } from 'kafkajs';
 import { CloudEvent } from 'cloudevents';
 import BodyParser from 'body-parser';
 import { WebSocketServer } from 'ws';
@@ -8,7 +8,7 @@ import chalk from 'chalk';
 const myChalk = new chalk.constructor({level: 1, enabled: true, hasColor: true, 
   chalkOptions: {level: 1, enabled: true, hasColor: true, extended: true, 
                  visible: true, colorSupport: true}});
-                 
+
 //Map connecting hostname/service name's topic name for kafka with websocket open 
 const openConnections = new Map();
 
@@ -28,7 +28,7 @@ wss.on('connection', function connection(ws) {
 
   ws.on('message', function message(data) {
     const stringOfData = data.toString()
-
+    console.log("Recorded: "+stringOfData)
     if(stringOfData.startsWith("RecordMe:")){
       //Register request
       let toRecord = stringOfData.substring("RecordMe:".length);
@@ -77,12 +77,13 @@ wss.on('connection', function connection(ws) {
 });
 
 //Kafka connector setup
-const kafkaHostname = "kafka-service.default.svc.cluster.local"
-const kafkaPort = "9092"
+const kafkaHostname = process.env.KAFKA_ENDPOINT
+const kafkaPort = process.env.KAFKA_PORT
 const kafka = new Kafka({
   clientId: 'nodejs-proxy',
   brokers: [kafkaHostname+':'+kafkaPort],
-  createPartitioner: Partitioners.LegacyPartitioner
+  createPartitioner: Partitioners.LegacyPartitioner,
+  logLevel: logLevel.ERROR
 });
 const producer = kafka.producer();
 const consumer = kafka.consumer({ groupId: 'myMeshProxy' });
@@ -97,7 +98,7 @@ async function run() {
   //Consumer setup
   await consumer.connect();
   console.log(myChalk.yellow('Consumer side connected\n'));
-  await consumer.subscribe({ topic: 'quickstart-event'});
+  await consumer.subscribe({ topic: 'quickstart-event'});   // Just for debug purpose
   await consumer.run({
     eachMessage: eachMessageHandler
   });

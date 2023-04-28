@@ -17,4 +17,7 @@ spec:
       containers:
       - name: kafka-proxy
         image: batman.imolab.it:5000/kafka-proxy:latest
+        env:
+        - name: KAFKA_ENDPOINT
+          value: "kafka-service.default.svc.cluster.local"
 

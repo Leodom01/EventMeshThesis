@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dummy-node
+  labels:
+    app: dummy-node-app
+spec:
+  containers:
+  - name: node-service
+    image: batman.imolab.it:5000/node-service
+    env:
+    - name: SERVICE_NAME
+      value: "CHANGE_ME"    #When running kubectl apply add: --env SERVICE_NAME=<your actual service name> 
+    - name: PROXY_WEBSOCKET_PORT
+      value: "80"
+    - name: PROXY_ENDPOINT
+      value: "localhost"
+    ports:
+    - containerPort: 8080
+  - name: kafka-proxy
+    image: batman.imolab.it:5000/kafka-proxy
+    env:
+    - name: KAFKA_ENDPOINT
+      value: "kafka-service.default.svc.cluster.local"
+    ports:
+    - containerPort: 80
+  dnsPolicy: ClusterFirst

@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-service
+  labels:
+    app: node-service-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: node-service-app
+  template:
+    metadata:
+      labels:
+        app: node-service-app
+    spec:
+      containers:
+      - name: node-service
+        image: batman.imolab.it:5000/node-service:latest
+        env:
+        - name: SERVICE_NAME
+          value: "my_new_service_name"
+        - name: PROXY_WEBSOCKET_PORT
+          value: "80"
+        - name: PROXY_ENDPOINT
+          value: "kafka-proxy.default.svc.cluster.local"
+        ports:
+        - containerPort: 8080
+        
+
