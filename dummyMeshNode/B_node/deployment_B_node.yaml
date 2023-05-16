@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dummy-node-bundle
+  name: b-node
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: dummy-node-app
+      app: b-node
   template:
     metadata:
       labels:
-        app: dummy-node-app
+        app: b-node
     spec:
       containers:
       - name: node-service
         image: batman.imolab.it:5000/node-service
         env:
         - name: SERVICE_NAME
-          value: "service-beta"    #When running kubectl apply add: --env SERVICE_NAME=<your actual service name>
+          value: "b_node"    #When running kubectl apply add: --env SERVICE_NAME=<your actual service name>
         - name: PROXY_WEBSOCKET_PORT
           value: "80"
         - name: PROXY_ENDPOINT
@@ -36,7 +36,7 @@ spec:
         - name: KAFKA_PORT
           value: "9092"
         - name: SERVICE_NAME
-          value: "service-beta"    #When running kubectl apply add: --env SERVICE_NAME=<your actual service name>
+          value: "b_node"    #When running kubectl apply add: --env SERVICE_NAME=<your actual service name>
         ports:
         - containerPort: 80
         #readinessProbe:

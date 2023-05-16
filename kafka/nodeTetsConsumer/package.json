@@ -1,0 +1,14 @@
+{
+  "name": "kafka-test-consumer",
+  "version": "1.0.0",
+  "description": "Testing node for consumer messages in kafka",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "kafkajs": "^2.2.4",
+    "express": "^4.18.1"
+  }
+}

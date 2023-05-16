@@ -4,13 +4,11 @@ import { CloudEvent } from 'cloudevents';
 import BodyParser from 'body-parser';
 import { WebSocketServer } from 'ws';
 import chalk from 'chalk';
+import http from 'http';
 //Chalk colors: yellow setup,bgGreen kafka related positive updates, green successful response, red error, magenta messages
 const myChalk = new chalk.constructor({level: 1, enabled: true, hasColor: true, 
   chalkOptions: {level: 1, enabled: true, hasColor: true, extended: true, 
                  visible: true, colorSupport: true}});
-
-//Map connecting hostname/service name's topic name for kafka with websocket open 
-const openConnections = new Map();
 
 // app setup
 const app = express();
@@ -28,11 +26,15 @@ wss.on('connection', function connection(ws) {
 
   ws.on('message', function message(data) {
     const stringOfData = data.toString()
-    console.log("Recorded: "+stringOfData)
     if(stringOfData.startsWith("RecordMe:")){
       //Register request
       let toRecord = stringOfData.substring("RecordMe:".length);
       console.log(myChalk.green("New service recorded: "+toRecord))
+      const serviceWs = ws
+      //addTopicAndRestartConsumer(consumer, toRecord)
+      //console.log(myChalk.bgGreen("Added topic to monitor/sub: " + toRecord))
+      run(toRecord).catch(console.error);
+
     } else {
       //Message request
       //Else it means we have received a message
@@ -48,19 +50,11 @@ wss.on('connection', function connection(ws) {
         data: requestToForward.body
       })
 
-      //Check if the host that sent this message is already in my sub topics, else create it
-      //If Register has correctly been called this if should never trigger
-      if (!openConnections.has(requestToForward.header.headers.Origin)) {
-        openConnections.set(requestToForward.header.headers.Origin, ws)
-        addTopicAndRestartConsumer(consumer, requestToForward.header.headers.Origin)
-        console.log(myChalk.bgGreen("Added topic to monitor/sub: " + requestToForward.header.headers.Origin))
-      }
-
       // send the message to Kafka
       const topic = destination
       const message = JSON.stringify(ce)
       console.log("Sending to topic: " + topic)
-      console.log(message)
+      console.log(myChalk.green(message))
       producer.send({ topic: topic, messages: [{ value: message }] })
         .then((result) => {
           console.log(myChalk.green('Message sent!'));
@@ -79,28 +73,39 @@ wss.on('connection', function connection(ws) {
 //Kafka connector setup
 const kafkaHostname = process.env.KAFKA_ENDPOINT
 const kafkaPort = process.env.KAFKA_PORT
+const serviceName = process.env.SERVICE_NAME
 const kafka = new Kafka({
-  clientId: 'nodejs-proxy',
+  clientId: serviceName+'_proxy',
   brokers: [kafkaHostname+':'+kafkaPort],
-  createPartitioner: Partitioners.LegacyPartitioner,
-  logLevel: logLevel.ERROR
+  //createPartitioner: Partitioners.LegacyPartitioner,
+  //logLevel: logLevel.ERROR
 });
 const producer = kafka.producer();
-const consumer = kafka.consumer({ groupId: 'myMeshProxy' });
+const consumer = kafka.consumer({ groupId: serviceName+'_groupID' });
 
 //main maethod
-async function run() {
+async function run(topicToListenTo) {
 
-  //Producer setup
   await producer.connect();
   console.log(myChalk.yellow('Producer side connected\n'));
-
   //Consumer setup
   await consumer.connect();
   console.log(myChalk.yellow('Consumer side connected\n'));
-  await consumer.subscribe({ topic: 'quickstart-event'});   // Just for debug purpose
+  await consumer.subscribe({ topic: topicToListenTo});   
+  console.log(myChalk.bgGreen("Added topic to monitor/sub: " + topicToListenTo))
   await consumer.run({
     eachMessage: eachMessageHandler
+  });
+  consumer.on('consumer.rebalancing', async () => {
+    let startTime = new Date();
+    console.log(myChalk.red('Consumer group is rebalancing...'));
+    await consumer.stop();
+    await consumer.connect();
+    console.log(myChalk.yellow('Consumer side connected\n'));
+    //await consumer.subscribe({ topic: 'quickstart-event' }); // Just for debug purpose
+    await consumer.run({
+    eachMessage: eachMessageHandler
+    });
   });
 
   // Start the server on port 3000
@@ -109,94 +114,30 @@ async function run() {
   });
 }
 
-async function addTopicAndRestartConsumer(consumer, topic) {
-  // Stop the consumer
-  await consumer.stop()
-
-  // Add the new topic to listen to
-  consumer.subscribe({ topic: topic })
-
-  // Start the consumer again
-  await consumer.run({
-    eachMessage: eachMessageHandler
-  })
-}
-
 async function eachMessageHandler({ topic, partition, message }){
-  console.log(myChalk.green("Receiver: message received!"))
-    const ce = new CloudEvent(JSON.parse(message.value.toString()))
-    console.log(myChalk.magenta("Message: "+JSON.stringify(ce)))
-    //const ceMessage = new CloudEvent(JSON.parse(message.value.toString()))
+  console.log("Receiving from topic: "+topic)
+  console.log(myChalk.green("Message "+message.key+" received : " + message.value + " -- headers: "+JSON.stringify(message.headers)));
+  
+  //var recvdCe = CloudEvent(message.value)
+    //ceToHttp() e poi mandalo via websocket e tramite openCOnnections a nodeserver
 }
 
-//DEBUG APIs
- /**
-   * GET method for /sendMsg
-   * 
-   * The method sends a default msg to Kafka using the quickstart-event topic.
-   * The message contains a variable part generated randomly. 
-   * 
-   */
- app.get('/sendMsg', (req, res) => {
+function ceToHttpReq(cloudevent){
+  //TODO
+}
 
-  console.log("Producer: sending message!")
-
-  // create a random number between 1 and 100
-  const randomNum = Math.floor(Math.random() * 100) + 1;
-
+function httpReqToCe(reqData){
+  const requestToForward = JSON.parse(reqData)
+  const requestID = requestToForward.header.headers['X-Request-ID']
+  const destination = new URL(requestToForward.header.url).hostname   //This brings it to lower case, would be better to keep it in the original casing
   //Create CloudEvent
   const ce = new CloudEvent({
+    id: requestID,
     specversion: '1.0',
-    source: 'nodejs-producer',
-    type: 'com.leodom.testMsg',
-    data: 'Hello, Kafka! Random number: '+randomNum
+    source: requestToForward.header.headers.Origin,
+    type: requestToForward.header.url,
+    data: requestToForward.body
   })
 
-  // send the message to Kafka
-  const topic = 'quickstart-event'
-  const message = JSON.stringify(ce)
-  producer.send({topic: topic, messages: [{value: message}]})
-    .then((result) => {
-      console.log('Message sent!');
-      res.send(`Message sent: ${JSON.stringify(message)} \n`);
-    })
-    .catch((err) => {
-      console.error('Error sending message:' + err);
-      res.status(500).send('Error sending message \n');
-    });
-});
-/**
-   * POST method for /shipMsg
-   * 
-   * The method receive a message with body in  JSON format that will be put in the data field of the CE.
-   * It will then be sent to Kafka on topic quickstart-event
-   * 
-   */
-app.post('/shipMsg', (req, res) => {
-
-  console.log("Producer: shipping message!")
-
-  //Create CloudEvent
-  const ce = new CloudEvent({
-    specversion: '1.0',
-    source: req.hostname,
-    type: req.originalUrl,
-    data: req.body
-  })
-
-  const topic = 'quickstart-event'
-  const message = JSON.stringify(ce)
-  
-  // send the message to Kafka
-  producer.send({topic: topic, messages: [{value: message}]})
-    .then((result) => {
-      console.log('Message sent:' + JSON.stringify(result));
-      res.send(`Message sent: ${(result)} \n`);
-    })
-    .catch((err) => {
-      console.error('Error sending message:' + err);
-      res.status(500).send('Error sending message \n');
-    });
-});
-
-run().catch(console.error);
+  return ce
+}

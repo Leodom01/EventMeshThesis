@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-test-consumer
+  labels:
+    app: kafka-test-consumer-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-test-consumer-app
+  template:
+    metadata:
+      labels:
+        app: kafka-test-consumer-app
+    spec:
+      containers:
+      - name: kafka-test-consumer
+        image: batman.imolab.it:5000/kafka-test-consumer:latest
+        env:
+        - name: KAFKA_ENDPOINT
+          value: "kafka-service.default.svc.cluster.local"
+

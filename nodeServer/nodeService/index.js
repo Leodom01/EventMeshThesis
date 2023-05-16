@@ -91,7 +91,9 @@ startWebSocketConnection();
  * GET /send generate a body and send it trhough the websocket connection and returns the proxy response
  */
 app.get("/send", (req, res) => {
-  
+
+  //Se viene settato un target uso quello
+  const target = req.query.destination || 'http://myTargetService/myDestPath'
   const requestID = uuidv4()
   console.log("Invocato /send... UUID:"+requestID)
 
@@ -99,7 +101,7 @@ app.get("/send", (req, res) => {
   //il traffico per poi girarlo al proxy che poi se ne occupa. In modo che il dev del servizio non debba implementare nulla  
   var httpRequest = new http.IncomingMessage({
     method: 'GET',
-    url: 'http://myTargetService/myDestPath',
+    url: target,
     headers: {
       'Content-Type': 'application/json',
       'Origin': serviceName,
