@@ -39,12 +39,23 @@ spec:
           value: "machinegun"    #When running kubectl apply add: --env SERVICE_NAME=<your actual service name>
         ports:
         - containerPort: 80
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - benchmark-target-app
+              topologyKey: "kubernetes.io/hostname"
         #readinessProbe:
         #  tcpSocket:
         #    port: 80
         #  initialDelaySeconds: 5
         #  periodSeconds: 2
       dnsPolicy: ClusterFirst
+      
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -92,4 +103,14 @@ spec:
         #    port: 80
         #  initialDelaySeconds: 5
         #  periodSeconds: 2
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - benchmark-marchinegun-app
+              topologyKey: "kubernetes.io/hostname"
       dnsPolicy: ClusterFirst

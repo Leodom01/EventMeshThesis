@@ -5,7 +5,6 @@ import WebSocket from 'ws';
 import http from 'http';
 import { v4 as uuidv4 } from 'uuid';
 import chalk from 'chalk';
-import ntpClient from 'ntp-client';
 //Chalk colors: yellow setup,bgGreen kafka related positive updates, green successful response, red error, magenta messages
 const myChalk = new chalk.constructor({level: 1, enabled: true, hasColor: true, 
   chalkOptions: {level: 1, enabled: true, hasColor: true, extended: true, 
@@ -52,38 +51,11 @@ function connectWebSocket() {
     ws.send("RecordMe:" + serviceName)
   })
   ws.on('message', function message(data) {
-
-    console.log("INFO SUL TEMPO")
-    
-    console.log("My time 0 : "+ new Date())
-    ntpClient.getNetworkTime("pool.ntp.org", 123, function(err, date) {
-      if(err) {
-          console.error(err);
-          return;
-      }
-   
-      console.log("NTP time 0: ", date);
-  });
-
-  console.log("My time 1 : "+ new Date())
-    ntpClient.getNetworkTime("pool.ntp.org", 123, function(err, date) {
-      if(err) {
-          console.error(err);
-          return;
-      }
-   
-      console.log("NTP time 1: ", date);
-  });
-  
-    console.log("FINE INFO SUL TEMPO")
-
+    var receivedDate = new Date()
     data = data.toString()
     //Ho ricevuto un messaggio dal proxy (messaggio che arrvia da Kafka) 
     const messageReceived = JSON.parse(data)
-    console.log("Message from: "+ messageReceived.header.headers.Origin)
-    console.log("Destined to: "+ messageReceived.header.url)
-    console.log("Message ID: "+ messageReceived.header.headers['X-Request-ID'])
-    console.log("With data: "+ messageReceived.body)
+    console.log("UUID", messageReceived.header.headers['X-Request-ID'], " AT ", receivedDate)
   })
 }
 
@@ -97,46 +69,3 @@ function startWebSocketConnection() {
 }
 
 startWebSocketConnection();
-
-//
-///**
-// * GET /send generate a body and send it trhough the websocket connection and returns the proxy response
-// */
-//app.get("/send", (req, res) => {
-//
-//sendMsg(req.query.destination || 'http://myTargetService/myDestPath', "Test del body", res)
-//
-//});
-//
-//function sendMsg(destinationUrl, data, httpRes){
-//  const target = destinationUrl
-//  const requestID = uuidv4()
-//  console.log("Invocato /send... UUID:"+requestID)
-//
-//  //Voglio creare http request senza mandarla perchè è come se mi mettessi in mezzo e intercettassi tutto 
-//  //il traffico per poi girarlo al proxy che poi se ne occupa. In modo che il dev del servizio non debba implementare nulla  
-//  var httpRequest = new http.IncomingMessage({
-//    method: 'GET',
-//    url: target,
-//    headers: {
-//      'Content-Type': 'application/json',
-//      'Origin': serviceName,
-//      'X-Request-ID': requestID
-//    },
-//    rawHeaders: ['Content-Type', 'application/json']
-//  });
-//  httpRequest.data = data
-//
-//  var toSend = {
-//    header: httpRequest.socket,
-//    body: httpRequest.data
-//  }
-//
-//  ws.send(JSON.stringify(toSend))
-//  flyingRequest.set(requestID, httpRes);
-//}
-//
-//  // Start the server on port 8080
-//app.listen(localPort, () => {
-//  console.log(`Running on port ${localPort} \n`);
-//});

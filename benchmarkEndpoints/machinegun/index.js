@@ -51,7 +51,7 @@ function connectWebSocket() {
     ws.send("RecordMe:" + serviceName)
   })
   ws.on('message', function message(data) {
-    
+    var receivedTime = new Date()
     data = data.toString()
     if (data.startsWith("ACK")) {
       //Qui sarebbe anchebello aggungere un controllo e avere un timeout per le api, quindi se il messaggio non 
@@ -65,6 +65,7 @@ function connectWebSocket() {
         console.log("Conferma consegna: " + tokens[2])
         res.status(200).send(tokens[1] + " OK")
         flyingRequest.delete(tokens[1])
+        console.log("ACK UUID ",tokens[1], " AT ", receivedTime)
       } else if (tokens.length >= 4 && tokens[2] == "ko") {
         //Messaggio non consegnato
         var res = flyingRequest.get(tokens[1])
@@ -108,7 +109,9 @@ sendMsg(req.query.destination || 'http://myTargetService/myDestPath', "Test del 
 function sendMsg(destinationUrl, data, httpRes){
   const target = destinationUrl
   const requestID = uuidv4()
-  console.log("Invocato /send... UUID:"+requestID)
+  var receivedDate = new Date()
+
+  console.log("SEND UUID ", requestID, " AT ", receivedDate)
 
   //Voglio creare http request senza mandarla perchè è come se mi mettessi in mezzo e intercettassi tutto 
   //il traffico per poi girarlo al proxy che poi se ne occupa. In modo che il dev del servizio non debba implementare nulla  
@@ -130,6 +133,7 @@ function sendMsg(destinationUrl, data, httpRes){
   }
 
   ws.send(JSON.stringify(toSend))
+  console.log("SENT UUID ", requestID, " AT ", new Date())
   flyingRequest.set(requestID, httpRes);
 }
 
