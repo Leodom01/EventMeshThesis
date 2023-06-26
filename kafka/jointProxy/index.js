@@ -18,6 +18,7 @@ app.use(BodyParser.json())
 //Websocket server setup
 const wssPort = 80
 const wss = new WebSocketServer({ port: wssPort })
+let serviceWs = null
 
 wss.on('connection', function connection(ws) {
   console.log(myChalk.yellow("New connection received..."));
@@ -30,7 +31,7 @@ wss.on('connection', function connection(ws) {
       //Register request
       let toRecord = stringOfData.substring("RecordMe:".length);
       console.log(myChalk.green("New service recorded: "+toRecord))
-      const serviceWs = ws
+      serviceWs = ws
       //addTopicAndRestartConsumer(consumer, toRecord)
       //console.log(myChalk.bgGreen("Added topic to monitor/sub: " + toRecord))
       run(toRecord).catch(console.error);
@@ -116,8 +117,29 @@ async function run(topicToListenTo) {
 
 async function eachMessageHandler({ topic, partition, message }){
   console.log("Receiving from topic: "+topic)
-  console.log(myChalk.green("Message "+message.key+" received : " + message.value + " -- headers: "+JSON.stringify(message.headers)));
   
+  const msgJson = JSON.parse(message.value)
+  //Package it in an http request to send it back via ws
+  var httpRequest = new http.IncomingMessage({
+    method: 'GET',
+    url: msgJson.type,
+    headers: {
+      'Content-Type': 'application/json',
+      'Origin': msgJson.source,
+      'X-Request-ID': msgJson.id
+    },
+    rawHeaders: ['Content-Type', 'application/json']
+  });
+  httpRequest.data = msgJson.data
+
+  var toSend = {
+    header: httpRequest.socket,
+    body: httpRequest.data
+  }
+  serviceWs.send(JSON.stringify(toSend))
+
+  console.log(myChalk.green("Message forwarded to the service as: "+JSON.stringify(toSend)))
+
   //var recvdCe = CloudEvent(message.value)
     //ceToHttp() e poi mandalo via websocket e tramite openCOnnections a nodeserver
 }

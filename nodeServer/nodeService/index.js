@@ -1,12 +1,14 @@
 'use strict';
 
 import express from 'express';
-import { httpTransport, emitterFor, CloudEvent } from "cloudevents";
-import { response } from 'express';
-import WebSocket, { WebSocketServer } from 'ws';
-import axios from 'axios';
+import WebSocket from 'ws';
 import http from 'http';
 import { v4 as uuidv4 } from 'uuid';
+import chalk from 'chalk';
+//Chalk colors: yellow setup,bgGreen kafka related positive updates, green successful response, red error, magenta messages
+const myChalk = new chalk.constructor({level: 1, enabled: true, hasColor: true, 
+  chalkOptions: {level: 1, enabled: true, hasColor: true, extended: true, 
+                 visible: true, colorSupport: true}});
 
 // Constants
 const localPort = 8080
@@ -72,6 +74,13 @@ function connectWebSocket() {
       } else {
         console.log("Unknown mesage: " + data)
       }
+    }else{
+      //Ho ricevuto un messaggio dal proxy (messaggio che arrvia da Kafka) 
+      const messageReceived = JSON.parse(data)
+      console.log("Message from: "+ messageReceived.header.headers.Origin)
+      console.log("Destined to: "+ messageReceived.header.url)
+      console.log("Message ID: "+ messageReceived.header.headers['X-Request-ID'])
+      console.log("With data: "+ messageReceived.body)
     }
   })
 }
@@ -92,8 +101,12 @@ startWebSocketConnection();
  */
 app.get("/send", (req, res) => {
 
-  //Se viene settato un target uso quello
-  const target = req.query.destination || 'http://myTargetService/myDestPath'
+sendMsg(req.query.destination || 'http://myTargetService/myDestPath', "Test del body", res)
+
+});
+
+function sendMsg(destinationUrl, data, httpRes){
+  const target = destinationUrl
   const requestID = uuidv4()
   console.log("Invocato /send... UUID:"+requestID)
 
@@ -109,7 +122,7 @@ app.get("/send", (req, res) => {
     },
     rawHeaders: ['Content-Type', 'application/json']
   });
-  httpRequest.data = "Test del body :)"
+  httpRequest.data = data
 
   var toSend = {
     header: httpRequest.socket,
@@ -117,14 +130,8 @@ app.get("/send", (req, res) => {
   }
 
   ws.send(JSON.stringify(toSend))
-  flyingRequest.set(requestID, res);
-
-  //tengo on hold la risposta finchè non mi arriva il messaggio di conferma o meno dal proxy
-
-  //console.log("Sent message: "+JSON.stringify(toSend))
-  //Handle response from ws before returning status 200 and check error cases
-  //res.status(200).send('Hopefully I sent it! \n');
-});
+  flyingRequest.set(requestID, httpRes);
+}
 
   // Start the server on port 8080
 app.listen(localPort, () => {
