@@ -5,6 +5,7 @@ import WebSocket from 'ws';
 import http from 'http';
 import { v4 as uuidv4 } from 'uuid';
 import chalk from 'chalk';
+import fs from 'fs';
 //Chalk colors: yellow setup,bgGreen kafka related positive updates, green successful response, red error, magenta messages
 const myChalk = new chalk.constructor({level: 1, enabled: true, hasColor: true, 
   chalkOptions: {level: 1, enabled: true, hasColor: true, extended: true, 
@@ -12,6 +13,7 @@ const myChalk = new chalk.constructor({level: 1, enabled: true, hasColor: true,
 
 // Constants
 const localPort = 8080
+const logFile = '/var/log/'+process.env.SERVICE_NAME+'/'+ new Date().toISOString();
 //I need to find a way to get it from the kubernetes service
 let support;
 if(typeof process.env.SERVICE_NAME === 'undefined'){
@@ -34,6 +36,29 @@ const app = express();
 //Setup websocket
 let ws;
 
+//Crea file di log e folder
+fs.mkdir('/var/log/'+process.env.SERVICE_NAME, { recursive: true }, (err) => {
+  if (err) {
+    console.error('Errore nella creazione della cartella:', err);
+  } else {
+    console.log('Cartella creata con successo.');
+    fs.open(logFile, 'w', (err, fd) => {
+      if (err) {
+        console.error('Errore nella creazione del file:', err);
+      } else {
+        console.log('File di log creato con successo.');
+        fs.close(fd, (err) => {
+          if (err) {
+            console.error('Errore nella chiusura del file:', err);
+          }
+        });
+      }
+    });
+  }
+});
+
+
+
 function connectWebSocket() {
   try{
     ws = new WebSocket("ws://" + process.env.PROXY_ENDPOINT + ":" + process.env.PROXY_WEBSOCKET_PORT);
@@ -51,7 +76,7 @@ function connectWebSocket() {
     ws.send("RecordMe:" + serviceName)
   })
   ws.on('message', function message(data) {
-    var receivedTime = new Date()
+    var receivedTime = new Date().toISOString()
     data = data.toString()
     if (data.startsWith("ACK")) {
       //Qui sarebbe anchebello aggungere un controllo e avere un timeout per le api, quindi se il messaggio non 
@@ -62,10 +87,11 @@ function connectWebSocket() {
       if (tokens.length == 3 && tokens[2] == "ok") {
         //Messaggio consegnato
         var res = flyingRequest.get(tokens[1])
-        console.log("Conferma consegna: " + tokens[2])
+        //console.log("Conferma consegna: " + tokens[2])        DEBUG
         res.status(200).send(tokens[1] + " OK")
         flyingRequest.delete(tokens[1])
-        console.log("ACK UUID ",tokens[1], " AT ", receivedTime)
+        //console.log("ACK UUID ",tokens[1], " AT ", receivedTime)
+        fs.writeFile(logFile, "ACK UUID "+tokens[1]+" AT "+receivedTime+'\n', {flag: 'a'}, (err) => {});
       } else if (tokens.length >= 4 && tokens[2] == "ko") {
         //Messaggio non consegnato
         var res = flyingRequest.get(tokens[1])
@@ -76,12 +102,10 @@ function connectWebSocket() {
         console.log("Unknown mesage: " + data)
       }
     }else{
-      //Ho ricevuto un messaggio dal proxy (messaggio che arrvia da Kafka) 
-      const messageReceived = JSON.parse(data)
-      console.log("Message from: "+ messageReceived.header.headers.Origin)
-      console.log("Destined to: "+ messageReceived.header.url)
-      console.log("Message ID: "+ messageReceived.header.headers['X-Request-ID'])
-      console.log("With data: "+ messageReceived.body)
+       //Ho ricevuto un messaggio dal proxy (messaggio che arrvia da Kafka) 
+       const messageReceived = JSON.parse(data)
+       //console.log("GOT UUID", messageReceived.header.headers['X-Request-ID'], " AT ", receivedTime)
+       fs.writeFile(logFile, "GOT UUID "+messageReceived.header.headers['X-Request-ID']+" AT "+receivedTime+'\n', {flag: 'a'}, (err) => {});
     }
   })
 }
@@ -109,9 +133,11 @@ sendMsg(req.query.destination || 'http://myTargetService/myDestPath', "Test del 
 function sendMsg(destinationUrl, data, httpRes){
   const target = destinationUrl
   const requestID = uuidv4()
-  var receivedDate = new Date()
+  var receivedDate = new Date().toISOString()
 
-  console.log("SEND UUID ", requestID, " AT ", receivedDate)
+  //console.log("SEND UUID ", requestID, " AT ", receivedDate)
+  fs.writeFile(logFile, "SEND UUID "+requestID+" AT "+receivedDate+'\n', {flag: 'a'}, (err) => {});
+   
 
   //Voglio creare http request senza mandarla perchè è come se mi mettessi in mezzo e intercettassi tutto 
   //il traffico per poi girarlo al proxy che poi se ne occupa. In modo che il dev del servizio non debba implementare nulla  
@@ -133,7 +159,9 @@ function sendMsg(destinationUrl, data, httpRes){
   }
 
   ws.send(JSON.stringify(toSend))
-  console.log("SENT UUID ", requestID, " AT ", new Date())
+  var sentDate = new Date().toISOString()
+  //console.log("SENT UUID ", requestID, " AT ", sentDate)
+  fs.writeFile(logFile, "SENT UUID "+requestID+" AT "+sentDate+'\n', {flag: 'a'}, (err) => {});
   flyingRequest.set(requestID, httpRes);
 }
 

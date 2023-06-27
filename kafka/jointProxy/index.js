@@ -5,10 +5,34 @@ import BodyParser from 'body-parser';
 import { WebSocketServer } from 'ws';
 import chalk from 'chalk';
 import http from 'http';
+import fs from 'fs';
 //Chalk colors: yellow setup,bgGreen kafka related positive updates, green successful response, red error, magenta messages
 const myChalk = new chalk.constructor({level: 1, enabled: true, hasColor: true, 
   chalkOptions: {level: 1, enabled: true, hasColor: true, extended: true, 
                  visible: true, colorSupport: true}});
+
+const logFile = '/var/log/'+process.env.SERVICE_NAME+'-proxy/'+ new Date().toISOString();
+
+//Crea file di log e folder
+fs.mkdir('/var/log/'+process.env.SERVICE_NAME+'-proxy', { recursive: true }, (err) => {
+  if (err) {
+    console.error('Errore nella creazione della cartella:', err);
+  } else {
+    console.log('Cartella creata con successo.');
+    fs.open(logFile, 'w', (err, fd) => {
+      if (err) {
+        console.error('Errore nella creazione del file:', err);
+      } else {
+        console.log('File di log creato con successo.');
+        fs.close(fd, (err) => {
+          if (err) {
+            console.error('Errore nella chiusura del file:', err);
+          }
+        });
+      }
+    });
+  }
+});
 
 // app setup
 const app = express();
@@ -26,6 +50,7 @@ wss.on('connection', function connection(ws) {
   ws.on('error', console.error);
 
   ws.on('message', function message(data) {
+    var receivedDate = new Date().toISOString()
     const stringOfData = data.toString()
     if(stringOfData.startsWith("RecordMe:")){
       //Register request
@@ -41,6 +66,8 @@ wss.on('connection', function connection(ws) {
       //Else it means we have received a message
       const requestToForward = JSON.parse(data)
       const requestID = requestToForward.header.headers['X-Request-ID']
+      //console.log("TO KAFKA ",requestID, " AT ", receivedDate)
+      fs.writeFile(logFile, "TO KAFKA UUID "+requestID+" AT "+receivedDate+'\n', {flag: 'a'}, (err) => {});
       const destination = new URL(requestToForward.header.url).hostname   //This brings it to lower case, would be better to keep it in the original casing
       //Create CloudEvent
       const ce = new CloudEvent({
@@ -54,11 +81,11 @@ wss.on('connection', function connection(ws) {
       // send the message to Kafka
       const topic = destination
       const message = JSON.stringify(ce)
-      console.log("Sending to topic: " + topic)
-      console.log(myChalk.green(message))
+      //console.log("Sending to topic: " + topic)       DEBUG
+      //console.log(myChalk.green(message))       DEBUG
       producer.send({ topic: topic, messages: [{ value: message }] })
         .then((result) => {
-          console.log(myChalk.green('Message sent!'));
+          //console.log(myChalk.green('Message sent!'));        DEBUG
           ws.send("ACK " + requestID + " ok")
         })
         .catch((err) => {
@@ -66,8 +93,6 @@ wss.on('connection', function connection(ws) {
           ws.send("ACK " + requestID + " ko " + err)
         });
     }
-
-    
   })
 });
 
@@ -98,7 +123,7 @@ async function run(topicToListenTo) {
     eachMessage: eachMessageHandler
   });
   consumer.on('consumer.rebalancing', async () => {
-    let startTime = new Date();
+    let startTime = new Date().toISOString()
     console.log(myChalk.red('Consumer group is rebalancing...'));
     await consumer.stop();
     await consumer.connect();
@@ -116,9 +141,13 @@ async function run(topicToListenTo) {
 }
 
 async function eachMessageHandler({ topic, partition, message }){
-  console.log("Receiving from topic: "+topic)
-  
+  //console.log("Receiving from topic: "+topic)       DEBUG 
+  var receivedDate = new Date().toISOString()
+
   const msgJson = JSON.parse(message.value)
+
+  //console.log("FROM KAFKA ",msgJson.id, " AT ", receivedDate)
+  fs.writeFile(logFile, "FROM KAFKA UUID "+msgJson.id+" AT "+receivedDate+'\n', {flag: 'a'}, (err) => {});
   //Package it in an http request to send it back via ws
   var httpRequest = new http.IncomingMessage({
     method: 'GET',
@@ -138,7 +167,7 @@ async function eachMessageHandler({ topic, partition, message }){
   }
   serviceWs.send(JSON.stringify(toSend))
 
-  console.log(myChalk.green("Message forwarded to the service as: "+JSON.stringify(toSend)))
+  //console.log(myChalk.green("Message forwarded to the service as: "+JSON.stringify(toSend)))        DEBUG
 
   //var recvdCe = CloudEvent(message.value)
     //ceToHttp() e poi mandalo via websocket e tramite openCOnnections a nodeserver

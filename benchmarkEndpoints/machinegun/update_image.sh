@@ -8,4 +8,4 @@ sudo docker tag machinegun localhost:5000/machinegun;
 
 sudo docker push localhost:5000/machinegun;
 
-sudo docker image remove ${IMAGE_TO_RMV};
+sudo docker image remove -f ${IMAGE_TO_RMV};
