@@ -1,0 +1,11 @@
+Eseguo test in cui sequenzialmente uno dopo l'altro mando una send alla volta fra i due servizi, classici hook di log.
+Questo il comando per eseguire le curl:
+while true; do curl benchmark-machinegun-service.default.svc.cluster.local:8080/send?destination="http://target"; done
+
+Lo script bash viene lanciato da una macchina bash ubuntu sullo stesso cluster, dal momento che mi interessa solo mandare la chiamate 
+alle API ma non è rilevante come o quando arrivano le notifiche.
+Si tratta di uno test di comunicazione per avere dati in merito all'RTT a riposo (sempre solo un messaggio in volo per volta)
+
+Lascio girare per circa 5 minuti per raccogliere un buon umero di dati 
+
+Deployment usato quello standard in benchmark/deployment_benchmark.yaml
