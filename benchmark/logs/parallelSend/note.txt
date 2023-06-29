@@ -1,0 +1,7 @@
+Eseguo un test dove contatto l'endpoint send parallelamente con una curl multithread da una macchina esterna. 
+Il setup è il medesimo dell'esperimento singleSend ma con una curl parallela che non aspetta il risultato prima di far partire le altre.
+Lo script che le invia è APISender.sh in questo folder
+
+Lascio girare per 2 minuti mandando 50 richieste al secondo
+
+Deployment usato quello standard in benchmark/deployment_benchmark.yaml

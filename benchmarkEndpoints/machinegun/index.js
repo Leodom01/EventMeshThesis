@@ -77,7 +77,7 @@ function connectWebSocket() {
     ws.send("RecordMe:" + serviceName)
   })
   ws.on('message', function message(data) {
-    var receivedTime = new Date().toISOString()
+    var receivedTime = new Date().getTime()
     data = data.toString()
     if (data.startsWith("ACK")) {
       //Qui sarebbe anchebello aggungere un controllo e avere un timeout per le api, quindi se il messaggio non 
@@ -92,7 +92,7 @@ function connectWebSocket() {
         res.status(200).send(tokens[1] + " OK")
         flyingRequest.delete(tokens[1])
         //console.log("ACK UUID ",tokens[1], " AT ", receivedTime)
-        fs.writeFile(logFile, "ACK UUID "+tokens[1]+" AT "+receivedTime+'\n', {flag: 'a'}, (err) => {});
+        fs.writeFile(logFile, "ACK "+tokens[1]+" "+receivedTime+'\n', {flag: 'a'}, (err) => {});
       } else if (tokens.length >= 4 && tokens[2] == "ko") {
         //Messaggio non consegnato
         var res = flyingRequest.get(tokens[1])
@@ -106,7 +106,7 @@ function connectWebSocket() {
        //Ho ricevuto un messaggio dal proxy (messaggio che arrvia da Kafka) 
        const messageReceived = JSON.parse(data)
        //console.log("GOT UUID", messageReceived.header.headers['X-Request-ID'], " AT ", receivedTime)
-       fs.writeFile(logFile, "GOT UUID "+messageReceived.header.headers['X-Request-ID']+" AT "+receivedTime+'\n', {flag: 'a'}, (err) => {});
+       fs.writeFile(logFile, "GOT "+messageReceived.header.headers['X-Request-ID']+" "+receivedTime+'\n', {flag: 'a'}, (err) => {});
     }
   })
 }
@@ -126,18 +126,17 @@ startWebSocketConnection();
  * GET /send generate a body and send it trhough the websocket connection and returns the proxy response
  */
 app.get("/send", (req, res) => {
-
-sendMsg(req.query.destination || 'http://myTargetService/myDestPath', "Test del body", res)
+  sendMsg(req.query.destination || 'http://myTargetService/myDestPath', "Test del body", res)
 
 });
 
 function sendMsg(destinationUrl, data, httpRes){
   const target = destinationUrl
   const requestID = uuidv4()
-  var receivedDate = new Date().toISOString()
+  var receivedDate = new Date().getTime()
 
   //console.log("SEND UUID ", requestID, " AT ", receivedDate)
-  fs.writeFile(logFile, "SEND UUID "+requestID+" AT "+receivedDate+'\n', {flag: 'a'}, (err) => {});
+  fs.writeFile(logFile, "SEND "+requestID+" "+receivedDate+'\n', {flag: 'a'}, (err) => {});
    
 
   //Voglio creare http request senza mandarla perchè è come se mi mettessi in mezzo e intercettassi tutto 
@@ -160,9 +159,9 @@ function sendMsg(destinationUrl, data, httpRes){
   }
 
   ws.send(JSON.stringify(toSend))
-  var sentDate = new Date().toISOString()
+  var sentDate = new Date().getTime()
   //console.log("SENT UUID ", requestID, " AT ", sentDate)
-  fs.writeFile(logFile, "SENT UUID "+requestID+" AT "+sentDate+'\n', {flag: 'a'}, (err) => {});
+  fs.writeFile(logFile, "SENT "+requestID+" "+sentDate+'\n', {flag: 'a'}, (err) => {});
   flyingRequest.set(requestID, httpRes);
 }
 
