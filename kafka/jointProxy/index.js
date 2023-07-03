@@ -11,7 +11,7 @@ const myChalk = new chalk.constructor({level: 1, enabled: true, hasColor: true,
   chalkOptions: {level: 1, enabled: true, hasColor: true, extended: true, 
                  visible: true, colorSupport: true}});
 
-const logFile = '/var/log/'+process.env.SERVICE_NAME+'-proxy/'+ new Date().toISOString();
+const logFile = '/var/log/'+process.env.SERVICE_NAME+'-proxy';
 console.log("Logfile at: ", logFile)
 //Crea file di log e folder
 fs.mkdir('/var/log/'+process.env.SERVICE_NAME+'-proxy', { recursive: true }, (err) => {

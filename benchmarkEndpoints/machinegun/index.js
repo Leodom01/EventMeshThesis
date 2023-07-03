@@ -13,7 +13,7 @@ const myChalk = new chalk.constructor({level: 1, enabled: true, hasColor: true,
 
 // Constants
 const localPort = 8080
-const logFile = '/var/log/'+process.env.SERVICE_NAME+'/'+ new Date().toISOString();
+const logFile = '/var/log/'+process.env.SERVICE_NAME;
 console.log("Logfile at: ", logFile)
 //I need to find a way to get it from the kubernetes service
 let support;
