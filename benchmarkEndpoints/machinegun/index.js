@@ -13,7 +13,7 @@ const myChalk = new chalk.constructor({level: 1, enabled: true, hasColor: true,
 
 // Constants
 const localPort = 8080
-const logFile = '/var/log/'+process.env.SERVICE_NAME+'/'+ new Date().toISOString();
+const logFile = '/var/log/'+process.env.SERVICE_NAME+'/logFile';
 console.log("Logfile at: ", logFile)
 //I need to find a way to get it from the kubernetes service
 let support;
@@ -92,7 +92,7 @@ function connectWebSocket() {
         res.status(200).send(tokens[1] + " OK")
         flyingRequest.delete(tokens[1])
         //console.log("ACK UUID ",tokens[1], " AT ", receivedTime)
-        fs.writeFile(logFile, "ACK "+tokens[1]+" "+receivedTime+'\n', {flag: 'a'}, (err) => {});
+        fs.writeFile(logFile, "ACK machinegun "+tokens[1]+" "+receivedTime+'\n', {flag: 'a'}, (err) => {});
       } else if (tokens.length >= 4 && tokens[2] == "ko") {
         //Messaggio non consegnato
         var res = flyingRequest.get(tokens[1])
@@ -106,7 +106,7 @@ function connectWebSocket() {
        //Ho ricevuto un messaggio dal proxy (messaggio che arrvia da Kafka) 
        const messageReceived = JSON.parse(data)
        //console.log("GOT UUID", messageReceived.header.headers['X-Request-ID'], " AT ", receivedTime)
-       fs.writeFile(logFile, "GOT "+messageReceived.header.headers['X-Request-ID']+" "+receivedTime+'\n', {flag: 'a'}, (err) => {});
+       fs.writeFile(logFile, "GOT machinegun "+messageReceived.header.headers['X-Request-ID']+" "+receivedTime+'\n', {flag: 'a'}, (err) => {});
     }
   })
 }
@@ -136,7 +136,7 @@ function sendMsg(destinationUrl, data, httpRes){
   var receivedDate = new Date().getTime()
 
   //console.log("SEND UUID ", requestID, " AT ", receivedDate)
-  fs.writeFile(logFile, "SEND "+requestID+" "+receivedDate+'\n', {flag: 'a'}, (err) => {});
+  fs.writeFile(logFile, "SEND machinegun "+requestID+" "+receivedDate+'\n', {flag: 'a'}, (err) => {});
    
 
   //Voglio creare http request senza mandarla perchè è come se mi mettessi in mezzo e intercettassi tutto 
@@ -161,7 +161,7 @@ function sendMsg(destinationUrl, data, httpRes){
   ws.send(JSON.stringify(toSend))
   var sentDate = new Date().getTime()
   //console.log("SENT UUID ", requestID, " AT ", sentDate)
-  fs.writeFile(logFile, "SENT "+requestID+" "+sentDate+'\n', {flag: 'a'}, (err) => {});
+  fs.writeFile(logFile, "SENT machinegun "+requestID+" "+sentDate+'\n', {flag: 'a'}, (err) => {});
   flyingRequest.set(requestID, httpRes);
 }
 

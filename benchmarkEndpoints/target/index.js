@@ -13,7 +13,7 @@ const myChalk = new chalk.constructor({level: 1, enabled: true, hasColor: true,
 
 // Constants
 const localPort = 8080
-const logFile = '/var/log/'+process.env.SERVICE_NAME +'/'+ new Date().toISOString();
+const logFile = '/var/log/'+process.env.SERVICE_NAME +'/logFile';
 console.log("Logfile at: ", logFile)
 //I need to find a way to get it from the kubernetes service
 let support;
@@ -89,7 +89,7 @@ function connectWebSocket() {
         //console.log("Conferma consegna: " + tokens[2])        DEBUG
         flyingRequest.delete(tokens[1])
         //console.log("ACK UUID ",tokens[1], " AT ", receivedDate)
-        fs.writeFile(logFile, "ACK "+tokens[1]+" "+receivedDate+'\n', {flag: 'a'}, (err) => {});
+        fs.writeFile(logFile, "ACK target "+tokens[1]+" "+receivedDate+'\n', {flag: 'a'}, (err) => {});
       } else if (tokens.length >= 4 && tokens[2] == "ko") {
         //Messaggio non consegnato
         var res = flyingRequest.get(tokens[1])
@@ -102,7 +102,7 @@ function connectWebSocket() {
       //Ho ricevuto un messaggio dal proxy (messaggio che arrvia da Kafka) 
       const messageReceived = JSON.parse(data)
       //console.log("GOT UUID", messageReceived.header.headers['X-Request-ID'], " AT ", receivedDate)
-      fs.writeFile(logFile, "GOT "+messageReceived.header.headers['X-Request-ID']+" "+receivedDate+'\n', {flag: 'a'}, (err) => {});
+      fs.writeFile(logFile, "GOT target "+messageReceived.header.headers['X-Request-ID']+" "+receivedDate+'\n', {flag: 'a'}, (err) => {});
       pingMessage(messageReceived)
     }
     
@@ -121,7 +121,7 @@ async function pingMessage(message){
   ws.send(JSON.stringify(message))
   var sendDate = new Date().getTime()
   //console.log("RES UUID ", message.header.headers['X-Request-ID'], " AT ", sendDate)
-  fs.writeFile(logFile, "RES "+message.header.headers['X-Request-ID']+" "+sendDate+'\n', {flag: 'a'}, (err) => {});
+  fs.writeFile(logFile, "RES target "+message.header.headers['X-Request-ID']+" "+sendDate+'\n', {flag: 'a'}, (err) => {});
   flyingRequest.set(message.header.headers['X-Request-ID'], message);
 }
 
