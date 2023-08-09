@@ -1,0 +1,54 @@
+root@ubuntu:~# ab -n 5000 -c 125 benchmark-machinegun-service.default.svc.cluster.local:8080/send?destination="http://target/myPath"
+This is ApacheBench, Version 2.3 <$Revision: 1879490 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking benchmark-machinegun-service.default.svc.cluster.local (be patient)
+Completed 500 requests
+Completed 1000 requests
+Completed 1500 requests
+Completed 2000 requests
+Completed 2500 requests
+Completed 3000 requests
+Completed 3500 requests
+Completed 4000 requests
+Completed 4500 requests
+Completed 5000 requests
+Finished 5000 requests
+
+
+Server Software:
+Server Hostname:        benchmark-machinegun-service.default.svc.cluster.local
+Server Port:            8080
+
+Document Path:          /send?destination=http://target/myPath
+Document Length:        39 bytes
+
+Concurrency Level:      125
+Time taken for tests:   11.214 seconds
+Complete requests:      5000
+Failed requests:        0
+Total transferred:      1195000 bytes
+HTML transferred:       195000 bytes
+Requests per second:    445.86 [#/sec] (mean)
+Time per request:       280.356 [ms] (mean)
+Time per request:       2.243 [ms] (mean, across all concurrent requests)
+Transfer rate:          104.06 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    2   2.0      1      13
+Processing:    12  277  55.0    277     428
+Waiting:        4  237  50.4    237     397
+Total:         13  279  54.8    280     428
+
+Percentage of the requests served within a certain time (ms)
+  50%    280
+  66%    300
+  75%    313
+  80%    325
+  90%    353
+  95%    369
+  98%    379
+  99%    402
+ 100%    428 (longest request)

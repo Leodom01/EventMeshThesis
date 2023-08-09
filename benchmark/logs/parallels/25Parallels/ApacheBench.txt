@@ -1,0 +1,39 @@
+ab -n 5000 -c 25 benchmark-machinegun-service.default.svc.cluster.local:8080/send?destination="http://target/myPath"
+
+Server Software:
+Server Hostname:        benchmark-machinegun-service.default.svc.cluster.local
+Server Port:            8080
+
+Document Path:          /send?destination=http://target/myPath
+Document Length:        39 bytes
+
+Concurrency Level:      25
+Time taken for tests:   13.946 seconds
+Complete requests:      5000
+Failed requests:        0
+Total transferred:      1195000 bytes
+HTML transferred:       195000 bytes
+Requests per second:    358.53 [#/sec] (mean)
+Time per request:       69.728 [ms] (mean)
+Time per request:       2.789 [ms] (mean, across all concurrent requests)
+Transfer rate:          83.68 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    1   0.3      0       4
+Processing:    10   69  17.0     67     145
+Waiting:        7   59  15.1     58     125
+Total:         11   69  16.9     68     145
+ERROR: The median and mean for the initial connection time are more than twice the standard
+       deviation apart. These results are NOT reliable.
+
+Percentage of the requests served within a certain time (ms)
+  50%     68
+  66%     74
+  75%     79
+  80%     83
+  90%     92
+  95%    101
+  98%    111
+  99%    119
+ 100%    145 (longest request)

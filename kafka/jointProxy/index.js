@@ -11,7 +11,7 @@ const myChalk = new chalk.constructor({level: 1, enabled: true, hasColor: true,
   chalkOptions: {level: 1, enabled: true, hasColor: true, extended: true, 
                  visible: true, colorSupport: true}});
 
-const logFile = '/var/log/'+process.env.SERVICE_NAME+'-proxy';
+const logFile = '/var/log/'+process.env.SERVICE_NAME+'-proxy'+'/logFile';
 console.log("Logfile at: ", logFile)
 //Crea file di log e folder
 fs.mkdir('/var/log/'+process.env.SERVICE_NAME+'-proxy', { recursive: true }, (err) => {
@@ -50,7 +50,7 @@ wss.on('connection', function connection(ws) {
   ws.on('error', console.error);
 
   ws.on('message', function message(data) {
-    var receivedDate = new Date().toISOString()
+    var receivedDate = new Date().getTime()
     const stringOfData = data.toString()
     if(stringOfData.startsWith("RecordMe:")){
       //Register request
@@ -67,7 +67,7 @@ wss.on('connection', function connection(ws) {
       const requestToForward = JSON.parse(data)
       const requestID = requestToForward.header.headers['X-Request-ID']
       //console.log("TO KAFKA ",requestID, " AT ", receivedDate)
-      fs.writeFile(logFile, "TO KAFKA UUID "+requestID+" AT "+receivedDate+'\n', {flag: 'a'}, (err) => {});
+      fs.writeFile(logFile, "TO_KAFKA "+process.env.SERVICE_NAME+'-proxy ' + requestID+" "+receivedDate+'\n', {flag: 'a'}, (err) => {});
       const destination = new URL(requestToForward.header.url).hostname   //This brings it to lower case, would be better to keep it in the original casing
       //Create CloudEvent
       const ce = new CloudEvent({
@@ -102,10 +102,9 @@ const kafkaPort = process.env.KAFKA_PORT
 const serviceName = process.env.SERVICE_NAME
 const kafka = new Kafka({
   clientId: serviceName+'_proxy',
-  brokers: [kafkaHostname+':'+kafkaPort],
-  //createPartitioner: Partitioners.LegacyPartitioner,
-  //logLevel: logLevel.ERROR
+  brokers: [kafkaHostname+':'+kafkaPort]
 });
+
 const producer = kafka.producer();
 const consumer = kafka.consumer({ groupId: serviceName+'_groupID' });
 
@@ -128,7 +127,6 @@ async function run(topicToListenTo) {
     await consumer.stop();
     await consumer.connect();
     console.log(myChalk.yellow('Consumer side connected\n'));
-    //await consumer.subscribe({ topic: 'quickstart-event' }); // Just for debug purpose
     await consumer.run({
     eachMessage: eachMessageHandler
     });
@@ -142,12 +140,12 @@ async function run(topicToListenTo) {
 
 async function eachMessageHandler({ topic, partition, message }){
   //console.log("Receiving from topic: "+topic)       DEBUG 
-  var receivedDate = new Date().toISOString()
+  var receivedDate = new Date().getTime()
 
   const msgJson = JSON.parse(message.value)
 
   //console.log("FROM KAFKA ",msgJson.id, " AT ", receivedDate)
-  fs.writeFile(logFile, "FROM KAFKA UUID "+msgJson.id+" AT "+receivedDate+'\n', {flag: 'a'}, (err) => {});
+  fs.writeFile(logFile, "FROM_KAFKA "+process.env.SERVICE_NAME+'-proxy ' +msgJson.id+" "+receivedDate+'\n', {flag: 'a'}, (err) => {});
   //Package it in an http request to send it back via ws
   var httpRequest = new http.IncomingMessage({
     method: 'GET',
